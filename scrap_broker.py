@@ -39,35 +39,45 @@ def extract_urls_from_page(url_page)->tuple:
     return tuple(profile_urls)
 
 def get_profile(url)->dict:
-    profile_data = dict()
+    # initialize column orders
+    profile_data = {"encodedZuid":"",
+                    "name":"",
+                    "for_sale_count":"",
+                    "for_rent_count":"",
+                    "Broker address":"",
+                    "Broker phone":"",
+                    "Cell phone":"",
+                    "Zillow profile":"",
+                    }
     data_dict = get_data(url)
+    # encodedZuid as id and api param scraping
+    encodedZuid = data_dict["props"]["pageProps"]["profileDisplay"]["profileInfo"]["encodedZuid"]
+    profile_data["encodedZuid"] = encodedZuid
     # get name
     name = data_dict["props"]["pageProps"]["profileDisplay"]["contactCard"]["name"]
     profile_data["name"] = name
+     # get listings
+    for_sale = data_dict["props"]["pageProps"]["forSaleListings"]["listing_count"]
+    profile_data["for_sale_count"] = for_sale
+    for_rent = data_dict["props"]["pageProps"]["forRentListings"]["listing_count"]
+    profile_data["for_rent_count"] = for_rent
     # get professional info
+    profile_data["Zillow profile"] = check_url(url)
     professional_info = data_dict["props"]["pageProps"]["professionalInformation"]
     for info in professional_info:
         data = list(info.values())
-        profile_data[data[0]] = data[1]
-
-        if data[0] == "Broker address":
-            address = ','.join(data[1])
-            profile_data["Broker address"] = address
-
-        elif data[0] == "Websites":
-            for websites in data[1]:
-                text_url = list(websites.values())
-                profile_data[text_url[0]] = text_url[1]
-            del profile_data["Websites"]
-    # get listings
-    for_sale = data_dict["props"]["pageProps"]["forSaleListings"]["listing_count"]
-    profile_data["sale_listing_count"] = for_sale
-    for_rent = data_dict["props"]["pageProps"]["forRentListings"]["listing_count"]
-    profile_data["rent_listing_count"] = for_rent
-
-    encodedZuid = data_dict["props"]["pageProps"]["profileDisplay"]["profileInfo"]["encodedZuid"]
-    profile_data["encodedZuid"] = encodedZuid
-    print(f"extracted : {profile_data.values()}")
+        # skip unnecessary data
+        skip_this = ["Screenname","Member since","Real Estate Licenses","Other Licenses","Languages"]
+        if data[0] not in skip_this:
+            profile_data[data[0]] = data[1]
+            if data[0] == "Broker address":
+                address = ','.join(data[1])
+                profile_data["Broker address"] = address
+            elif data[0] == "Websites":
+                for websites in data[1]:
+                    text_url = list(websites.values())
+                    profile_data[text_url[0]] = text_url[1]
+                del profile_data["Websites"]    
     return profile_data
 
 def get_profile_from_pages(main_url):
@@ -78,11 +88,10 @@ def get_profile_from_pages(main_url):
         threads = executor.map(extract_urls_from_page, all_pages)
         for index, tuple_urls in enumerate(threads):
             all_profile_urls = all_profile_urls+tuple_urls
-            print(f"#{index+1} current profile urls : {len(all_profile_urls)}")
+            print(f"pages #{index+1} current profile urls : {len(all_profile_urls)}")
     return all_profile_urls
 
 def main(main_url):
-    profile_result = pandas.DataFrame()
     all_profile_urls = get_profile_from_pages(main_url)
     print(f"{len(all_profile_urls)} of link ready.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
@@ -98,8 +107,9 @@ if __name__=="__main__":
     # looking agency for area New Jersey, Chatham
     profile_pages_url = "https://www.zillow.com/professionals/real-estate-agent-reviews/chatham-nj/?page="
     profile_result = main(profile_pages_url)
-    print(profile_result)
-    print(type(profile_result))
     profile_result.to_excel("broker_profile.xlsx",index=False)
     print("saved!")
+
+    # url = "https://www.zillow.com/profile/Marilyn07090/"
+    # print(get_profile(url))
 
