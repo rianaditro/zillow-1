@@ -45,11 +45,16 @@ def parse_home_details(url)->dict:
           "price":"",
           "homeType":"",
           "streetAddress":"",
+          "city":"",
+          "state":"",
+          "zipcode":"",
           "latitude":"",
           "longitude":"",
           "bedrooms":"",
           "bathrooms":"",
           "yearBuilt":"",
+          "pageViewCount":"",
+          "favoriteCount":"",
           "daysOnZillow":"",
           "hdpUrl":"",
           "agentName":"",
@@ -60,20 +65,20 @@ def parse_home_details(url)->dict:
      }
      dict_text = list(dict_text.items())[0][1]["property"]
 
-     get_only = ["zpid","homeStatus","bedrooms","bathrooms","price","yearBuilt","streetAddress","hdpUrl","homeType","daysOnZillow","latitude","longitude","attributionInfo"]
+     get_only = ["zpid","city","state","homeStatus","bedrooms","bathrooms","price","yearBuilt","streetAddress","zipcode","hdpUrl","homeType","pageViewCount","favoriteCount","daysOnZillow","latitude","longitude","attributionInfo"]
+     
+     dict_keys = [item for item in dict_text.keys() if item in get_only]
+     #dict_value = [dict_text[item] for item in get_only if item in dict_text]
+     for i in range(len(dict_keys)):
+          result[dict_keys[i]] = dict_text[dict_keys[i]]
 
-     dict_value = [dict_text[item] for item in get_only]
-
-     for i in range(len(get_only)):
-          result[get_only[i]] = dict_value[i]
-
-          if get_only[i] == "attributionInfo":
-               result["agentName"] = dict_value[i]["agentName"]
-               result["agentPhoneNumber"] = dict_value[i]["agentPhoneNumber"]
-               result["brokerName"] = dict_value[i]["brokerName"]
-               result["brokerPhoneNumber"] = dict_value[i]["brokerPhoneNumber"]
-               result["lastUpdated"] = dict_value[i]["lastUpdated"]
+          if dict_keys[i] == "attributionInfo":
+               get_only_sub = ["agentName","agentPhoneNumber","brokerName","brokerPhoneNumber","lastUpdated"]
+               dict_keys_sub = [item for item in result["attributionInfo"].keys() if item in get_only_sub if item in result["attributionInfo"]]
+               for i in range(len(dict_keys_sub)):
+                    result[dict_keys_sub[i]] = result["attributionInfo"][dict_keys_sub[i]]
                del result["attributionInfo"]
+     print(result)
      return result
 
 def get_zpid_from_map(encodedZuid):
@@ -83,7 +88,7 @@ def get_zpid_from_map(encodedZuid):
     print(f"from {encodedZuid} found for-sale/rent: {len(list_of_house_urls)} houses ")
     return tuple(list_of_house_urls)
 
-def encodedZuid_to_home_details(encodedZuid)->pandas.DataFrame:
+def encodedZuid_to_home_details(encodedZuid):
     list_of_house_urls = get_zpid_from_map(encodedZuid)
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
           home_details = executor.map(parse_home_details,list_of_house_urls)
@@ -93,12 +98,5 @@ def encodedZuid_to_home_details(encodedZuid)->pandas.DataFrame:
 
 if __name__=="__main__":
      h = encodedZuid_to_home_details("X1-ZUu63jgpzv25u1_2avjk")
-     zpid = 39418271
-     url = f'https://www.zillow.com/homedetails/{zpid}_zpid'
-     #h = parse_home_details(url)
      h.to_excel("house_listings.xlsx",index=False)
      
-
-     # text = get_data("https://www.zillow.com/homedetails/5-N-Main-St-Wharton-NJ-07885/2129602173_zpid/")["props"]["pageProps"]["componentProps"]["gdpClientCache"]
-     # dict_text = json.loads(text)
-     # print(dict_text)
