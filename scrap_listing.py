@@ -18,7 +18,7 @@ https://www.zillow.com/homedetails/263-Boulevard-Pompton-Plains-NJ-07444/6373809
 Happy Scraping
 """
 
-from scrap_broker import get_html, get_data
+from scrap_broker import get_html, get_data,check_url
 
 import json
 import concurrent.futures
@@ -78,6 +78,8 @@ def parse_home_details(url)->dict:
                for i in range(len(dict_keys_sub)):
                     result[dict_keys_sub[i]] = result["attributionInfo"][dict_keys_sub[i]]
                del result["attributionInfo"]
+          elif dict_keys[i] == "hdpUrl":
+               result["hdpUrl"] = check_url(dict_text[dict_keys[i]])
      print(result)
      return result
 
