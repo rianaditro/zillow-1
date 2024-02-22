@@ -26,13 +26,21 @@ import pandas
 
 
 def get_house_urls(text):
+    print(text)
     list_of_dict = convert_to_dicts(text)
-    zpid_list = [f'https://www.zillow.com/homedetails/{item["zpid"]}_zpid' for item in list_of_dict if item["statusType"]=="FOR_SALE" or item["statusType"]=="FOR_RENT"]
+    if list_of_dict == [dict()]:
+         zpid_list = 'https://www.zillow.com/homedetails/_zpid'
+    else:
+         zpid_list = [f'https://www.zillow.com/homedetails/{item["zpid"]}_zpid' for item in list_of_dict if item["statusType"]=="FOR_SALE" or item["statusType"]=="FOR_RENT"]
     return tuple(zpid_list)
 
 def convert_to_dicts(text):
      text = text.replace("<html><head></head><body>[","").replace("]</body></html>","").replace("},","}},").split("},")
-     result = [json.loads(item) for item in text]
+     print(text)
+     if text[0] == "":
+          result = [dict()]
+     else:
+          result = [json.loads(item) for item in text]
      return result
 
 def parse_home_details(url)->dict:
@@ -80,7 +88,6 @@ def parse_home_details(url)->dict:
                del result["attributionInfo"]
           elif dict_keys[i] == "hdpUrl":
                result["hdpUrl"] = check_url(dict_text[dict_keys[i]])
-     print(result)
      return result
 
 def get_zpid_from_map(encodedZuid):
@@ -91,14 +98,23 @@ def get_zpid_from_map(encodedZuid):
     return tuple(list_of_house_urls)
 
 def encodedZuid_to_home_details(encodedZuid):
+    result = []
     list_of_house_urls = get_zpid_from_map(encodedZuid)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-          home_details = executor.map(parse_home_details,list_of_house_urls)
-          df = pandas.DataFrame(home_details)
+    if list_of_house_urls == 'https://www.zillow.com/homedetails/_zpid':
+         df = pandas.DataFrame()
+    elif len(list_of_house_urls) > 0:
+          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+               home_details = executor.map(parse_home_details,list_of_house_urls)
+               for index, home in enumerate(home_details):
+                    result.append(home)
+               print(f"get home #{index+1} of {len(list_of_house_urls)}")
+          df = pandas.DataFrame(result)
+    else:
+         df = pandas.DataFrame()
     return df
           
 
 if __name__=="__main__":
-     h = encodedZuid_to_home_details("X1-ZUu63jgpzv25u1_2avjk")
-     h.to_excel("house_listings.xlsx",index=False)
+     h = encodedZuid_to_home_details("X1-ZUz323lv0fpudl_39zrd")
+     print(h)
      

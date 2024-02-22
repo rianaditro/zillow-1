@@ -92,14 +92,14 @@ def get_profile_from_pages(main_url):
     return all_profile_urls
 
 def broker_profile(main_url):
-    list_of_profile = tuple()
+    list_of_profile = []
     all_profile_urls = get_profile_from_pages(main_url)
     print(f"{len(all_profile_urls)} of link ready.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         profiles = executor.map(get_profile,all_profile_urls)
         for index, profile in enumerate(profiles):
+            list_of_profile.append(profile)
             print(f"get profile #{index+1} of {len(all_profile_urls)}")
-            list_of_profile.add(profile)
     profile_result = pandas.DataFrame(list_of_profile)
     print(f"get DataFrame broker profile")
     return profile_result
