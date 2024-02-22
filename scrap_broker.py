@@ -83,7 +83,7 @@ def get_profile(url)->dict:
 def get_profile_from_pages(main_url):
     all_profile_urls = tuple()
     # 25 pages available
-    all_pages = [f"{main_url}{i}" for i in range(4,5)]
+    all_pages = [f"{main_url}{i}" for i in range(1,26)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         threads = executor.map(extract_urls_from_page, all_pages)
         for index, tuple_urls in enumerate(threads):
@@ -91,13 +91,17 @@ def get_profile_from_pages(main_url):
             print(f"pages #{index+1} current profile urls : {len(all_profile_urls)}")
     return all_profile_urls
 
-def main(main_url):
+def broker_profile(main_url):
+    list_of_profile = []
     all_profile_urls = get_profile_from_pages(main_url)
     print(f"{len(all_profile_urls)} of link ready.")
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         profiles = executor.map(get_profile,all_profile_urls)
-        profile_result = pandas.DataFrame(profiles)
-    print(f"get DataFrame")
+        for index, profile in enumerate(profiles):
+            print(f"profile #{index+1} of {len(all_profile_urls)}")
+            list_of_profile.append(profile)
+    profile_result = pandas.DataFrame(list_of_profile)
+    print(f"get DataFrame broker profile")
     return profile_result
 
 if __name__=="__main__":
@@ -106,10 +110,9 @@ if __name__=="__main__":
 
     # looking agency for area New Jersey, Chatham
     profile_pages_url = "https://www.zillow.com/professionals/real-estate-agent-reviews/chatham-nj/?page="
-    profile_result = main(profile_pages_url)
+    profile_result = broker_profile(profile_pages_url)
     profile_result.to_excel("broker_profile.xlsx",index=False)
     print("saved!")
 
     # url = "https://www.zillow.com/profile/Marilyn07090/"
     # print(get_profile(url))
-
