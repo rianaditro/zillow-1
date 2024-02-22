@@ -83,7 +83,7 @@ def get_profile(url)->dict:
 def get_profile_from_pages(main_url):
     all_profile_urls = tuple()
     # 25 pages available
-    all_pages = [f"{main_url}{i}" for i in range(1,2)]
+    all_pages = [f"{main_url}{i}" for i in range(1,26)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         threads = executor.map(extract_urls_from_page, all_pages)
         for index, tuple_urls in enumerate(threads):

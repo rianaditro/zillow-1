@@ -7,4 +7,5 @@ req.html
 urls.json
 trial
 .vscode
-__pycache
+__pycache__
+final_result.xlsx

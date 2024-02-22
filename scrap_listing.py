@@ -25,23 +25,14 @@ import concurrent.futures
 import pandas
 
 
-def get_house_urls(text):
-    print(text)
-    list_of_dict = convert_to_dicts(text)
-    if list_of_dict == [dict()]:
-         zpid_list = 'https://www.zillow.com/homedetails/_zpid'
-    else:
-         zpid_list = [f'https://www.zillow.com/homedetails/{item["zpid"]}_zpid' for item in list_of_dict if item["statusType"]=="FOR_SALE" or item["statusType"]=="FOR_RENT"]
-    return tuple(zpid_list)
-
-def convert_to_dicts(text):
-     text = text.replace("<html><head></head><body>[","").replace("]</body></html>","").replace("},","}},").split("},")
-     print(text)
-     if text[0] == "":
-          result = [dict()]
+def get_house_urls(html):
+     if html == "<html><head></head><body>[]</body></html>":
+         zpid_list = ["house listings not found"]
      else:
-          result = [json.loads(item) for item in text]
-     return result
+          txt_to_list = html.replace("<html><head></head><body>[","").replace("]</body></html>","").replace("},","}},").split("},")
+          js_text = [json.loads(item) for item in txt_to_list]
+          zpid_list = [f'https://www.zillow.com/homedetails/{item["zpid"]}_zpid' for item in js_text if item["statusType"]=="FOR_SALE" or item["statusType"]=="FOR_RENT"]
+     return tuple(zpid_list)
 
 def parse_home_details(url)->dict:
      text = get_data(url)["props"]["pageProps"]["componentProps"]["gdpClientCache"]
@@ -90,27 +81,21 @@ def parse_home_details(url)->dict:
                result["hdpUrl"] = check_url(dict_text[dict_keys[i]])
      return result
 
-def get_zpid_from_map(encodedZuid):
+def encodedZuid_to_home_details(encodedZuid):
+    result = []
     url = f"https://www.zillow.com/profile-page/api/public/v1/map-results?encodedZuid={encodedZuid}"    
     html = get_html(url)
     list_of_house_urls = get_house_urls(html)
     print(f"from {encodedZuid} found for-sale/rent: {len(list_of_house_urls)} houses ")
-    return tuple(list_of_house_urls)
-
-def encodedZuid_to_home_details(encodedZuid):
-    result = []
-    list_of_house_urls = get_zpid_from_map(encodedZuid)
-    if list_of_house_urls == 'https://www.zillow.com/homedetails/_zpid':
+    if list_of_house_urls == ("house listings not found",):
          df = pandas.DataFrame()
-    elif len(list_of_house_urls) > 0:
+    else:
           with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                home_details = executor.map(parse_home_details,list_of_house_urls)
                for index, home in enumerate(home_details):
                     result.append(home)
                print(f"get home #{index+1} of {len(list_of_house_urls)}")
           df = pandas.DataFrame(result)
-    else:
-         df = pandas.DataFrame()
     return df
           
 
