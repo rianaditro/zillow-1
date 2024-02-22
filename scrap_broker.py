@@ -83,7 +83,7 @@ def get_profile(url)->dict:
 def get_profile_from_pages(main_url):
     all_profile_urls = tuple()
     # 25 pages available
-    all_pages = [f"{main_url}{i}" for i in range(1,26)]
+    all_pages = [f"{main_url}{i}" for i in range(1,2)]
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         threads = executor.map(extract_urls_from_page, all_pages)
         for index, tuple_urls in enumerate(threads):
@@ -98,7 +98,7 @@ def broker_profile(main_url):
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         profiles = executor.map(get_profile,all_profile_urls)
         for index, profile in enumerate(profiles):
-            print(f"profile #{index+1} of {len(all_profile_urls)}")
+            print(f"get profile #{index+1} of {len(all_profile_urls)}")
             list_of_profile.append(profile)
     profile_result = pandas.DataFrame(list_of_profile)
     print(f"get DataFrame broker profile")
